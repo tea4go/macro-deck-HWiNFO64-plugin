@@ -21,4 +21,5 @@
 	<ColumnLabel>标签</ColumnLabel>
 	<ColumnValue>数值</ColumnValue>
 	<ColumnRawValue>原始数值</ColumnRawValue>
+	<ColumnVariable>变量名</ColumnVariable>
 </PluginStrings>

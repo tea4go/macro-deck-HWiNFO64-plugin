@@ -35,6 +35,7 @@ namespace HWiNFO64_Plugin
             columnHeader3 = new System.Windows.Forms.ColumnHeader();
             columnHeader4 = new System.Windows.Forms.ColumnHeader();
             columnHeader5 = new System.Windows.Forms.ColumnHeader();
+            columnHeader6 = new System.Windows.Forms.ColumnHeader();
             ((System.ComponentModel.ISupportInitialize)refreshTimeInput).BeginInit();
             SuspendLayout();
 
@@ -133,7 +134,7 @@ namespace HWiNFO64_Plugin
             // listView1 (中央：全宽表格)
             //
             listView1.BackColor = System.Drawing.Color.FromArgb(24, 24, 24);
-            listView1.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { columnHeader1, columnHeader2, columnHeader3, columnHeader4, columnHeader5 });
+            listView1.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { columnHeader1, columnHeader2, columnHeader3, columnHeader4, columnHeader5, columnHeader6 });
             listView1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             listView1.ForeColor = System.Drawing.Color.White;
             listView1.FullRowSelect = true;
@@ -150,27 +151,32 @@ namespace HWiNFO64_Plugin
             // columnHeader1 (编号)
             //
             columnHeader1.Text = "ID";
-            columnHeader1.Width = 60;
+            columnHeader1.Width = 40;
             //
             // columnHeader2 (传感器)
             //
             columnHeader2.Text = "Sensor";
-            columnHeader2.Width = 260;
+            columnHeader2.Width = 220;
             //
             // columnHeader3 (标签)
             //
             columnHeader3.Text = "Label";
-            columnHeader3.Width = 220;
+            columnHeader3.Width = 140;
             //
             // columnHeader4 (数值)
             //
             columnHeader4.Text = "Value";
-            columnHeader4.Width = 160;
+            columnHeader4.Width = 110;
             //
             // columnHeader5 (原始数值)
             //
             columnHeader5.Text = "Raw Value";
-            columnHeader5.Width = 160;
+            columnHeader5.Width = 100;
+            //
+            // columnHeader6 (变量名)
+            //
+            columnHeader6.Text = "Variable";
+            columnHeader6.Width = 260;
             //
             // label3 (左下：图标作者)
             //
@@ -241,5 +247,6 @@ namespace HWiNFO64_Plugin
         private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.ColumnHeader columnHeader4;
         private System.Windows.Forms.ColumnHeader columnHeader5;
+        private System.Windows.Forms.ColumnHeader columnHeader6;
     }
 }

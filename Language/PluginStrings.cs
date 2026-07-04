@@ -23,4 +23,5 @@ public class PluginStrings
     public string ColumnLabel = "Label";
     public string ColumnValue = "Value";
     public string ColumnRawValue = "Raw Value";
+    public string ColumnVariable = "Variable";
 }

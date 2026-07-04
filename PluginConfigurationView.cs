@@ -36,6 +36,7 @@ namespace HWiNFO64_Plugin
             columnHeader3.Text = s.ColumnLabel;
             columnHeader4.Text = s.ColumnValue;
             columnHeader5.Text = s.ColumnRawValue;
+            columnHeader6.Text = s.ColumnVariable;
         }
 
         private void PluginConfigurationView_Shown(object sender, EventArgs e)
@@ -91,6 +92,8 @@ namespace HWiNFO64_Plugin
                         item.SubItems.Add(registryPath.GetValue("Label" + i)?.ToString() ?? string.Empty);
                         item.SubItems.Add(registryPath.GetValue("Value" + i)?.ToString() ?? string.Empty);
                         item.SubItems.Add(registryPath.GetValue("ValueRaw" + i)?.ToString() ?? string.Empty);
+                        // 展示插件实际发布到 Macro Deck 的变量名（去重后的稳定命名）
+                        item.SubItems.Add(HWiNFO64Plugin.VariableNames.TryGetValue(i, out var varName) ? varName : string.Empty);
                         item.Font = new Font(item.Font, FontStyle.Regular);
                         listView1.Items.Add(item);
                     }

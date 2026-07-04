@@ -21,4 +21,5 @@
 	<ColumnLabel>Label</ColumnLabel>
 	<ColumnValue>Value</ColumnValue>
 	<ColumnRawValue>Raw Value</ColumnRawValue>
+	<ColumnVariable>Variable</ColumnVariable>
 </PluginStrings>
