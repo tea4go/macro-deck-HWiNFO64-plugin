@@ -1,4 +1,5 @@
 using HWiNFO64_Plugin;
+using NPinyin;
 using SuchByte.MacroDeck.Logging;
 using SuchByte.MacroDeck.Plugins;
 using SuchByte.MacroDeck.Variables;
@@ -6,6 +7,7 @@ using sugoides.HWiNFO64_Plugin.Language;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Timers;
@@ -34,9 +36,6 @@ namespace sugoides.HWiNFO64_Plugin
 
         internal static MacroDeckPlugin Instance { get; set; }
 
-        // 变量名规范化：保留所有 Unicode 字母/数字/下划线（含中日韩字符），其他字符统一替换为 _
-        // .NET Regex 默认支持 \p{L}（Unicode 字母类别）与 \p{N}（数字类别）
-        private static readonly Regex VarNameSanitizer = new Regex(@"[^\p{L}\p{N}_]+", RegexOptions.Compiled);
         // 折叠连续下划线为单个下划线，避免变量名出现 __ 或更多
         private static readonly Regex UnderscoreCollapser = new Regex("_{2,}", RegexOptions.Compiled);
 
@@ -226,10 +225,66 @@ namespace sugoides.HWiNFO64_Plugin
             return Sanitize(sensor);
         }
 
+        /// <summary>
+        /// 把原始文本转换为合法的变量名段：中文字符转拼音（无声调，下划线分隔），
+        /// 保留 ASCII 字母/数字/下划线，其他 Unicode 字母也保留（如日文、韩文回退到 \p{L}），
+        /// 所有非法字符替换为下划线，最后折叠连续下划线并去掉首尾下划线。
+        ///
+        /// 示例：
+        ///   "物理内存使用率"  → "wu_li_nei_cun_shi_yong_lu"
+        ///   "CPU 总使用率"    → "CPU_zong_shi_yong_lu"
+        ///   "Current DL rate" → "Current_DL_rate"
+        /// </summary>
         private static string Sanitize(string raw)
         {
-            var replaced = VarNameSanitizer.Replace(raw ?? string.Empty, "_");
-            return UnderscoreCollapser.Replace(replaced, "_").Trim('_');
+            if (string.IsNullOrEmpty(raw)) return string.Empty;
+
+            var sb = new StringBuilder(raw.Length * 3);
+            foreach (var ch in raw)
+            {
+                if (IsCjk(ch))
+                {
+                    // 单字符转拼音；NPinyin 会返回不带声调的拼音，如 '物' → "wu"
+                    var py = Pinyin.GetPinyin(ch);
+                    if (!string.IsNullOrEmpty(py) && py != ch.ToString())
+                    {
+                        AppendUnderscoreIfNeeded(sb);
+                        sb.Append(py.ToLowerInvariant());
+                        sb.Append('_');
+                    }
+                    else
+                    {
+                        // 转换失败（罕见 CJK 扩展字），用下划线占位
+                        AppendUnderscoreIfNeeded(sb);
+                    }
+                }
+                else if (char.IsLetterOrDigit(ch) || ch == '_')
+                {
+                    sb.Append(ch);
+                }
+                else
+                {
+                    AppendUnderscoreIfNeeded(sb);
+                }
+            }
+
+            var result = UnderscoreCollapser.Replace(sb.ToString(), "_").Trim('_');
+            return result;
+        }
+
+        private static void AppendUnderscoreIfNeeded(StringBuilder sb)
+        {
+            if (sb.Length > 0 && sb[sb.Length - 1] != '_') sb.Append('_');
+        }
+
+        /// <summary>
+        /// 判断字符是否为 CJK 汉字（基本区 + 扩展 A）。
+        /// 扩展 B/C/D 等生僻字暂不覆盖，NPinyin 也不一定支持。
+        /// </summary>
+        private static bool IsCjk(char ch)
+        {
+            return (ch >= 0x4E00 && ch <= 0x9FFF)   // CJK 统一表意
+                || (ch >= 0x3400 && ch <= 0x4DBF); // CJK 扩展 A
         }
 
         private void SensorTimer_Elapsed(object sender, ElapsedEventArgs e)
