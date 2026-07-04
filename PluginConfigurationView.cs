@@ -12,11 +12,6 @@ namespace HWiNFO64_Plugin
 {
     public partial class PluginConfigurationView : Form
     {
-        float angle = 0;
-        float rotSpeed = 5;
-        Point origin = new Point(51, 237);
-        int distance = 50;
-
         public PluginConfigurationView()
         {
             InitializeComponent();
@@ -52,6 +47,9 @@ namespace HWiNFO64_Plugin
                 refreshTime = 2000;
 
             refreshTimeInput.Value = refreshTime;
+
+            // 打开即自动填充传感器列表
+            PopulateSensorList();
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -67,14 +65,6 @@ namespace HWiNFO64_Plugin
             this.Close();
         }
 
-        private void lameTimer_Tick(object sender, EventArgs e)
-        {
-            angle += rotSpeed;
-            int x = (int)(origin.X + distance * Math.Sin(angle / 2 * Math.PI / 180f));
-            int y = (int)(origin.Y + distance * Math.Cos(angle * 2 * Math.PI / 180f));
-            izeLogo.Location = new Point(x, y);
-        }
-
         private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             Process.Start("explorer", "https://github.com/sugoides/macro-deck-HWiNFO64-plugin");
@@ -82,30 +72,34 @@ namespace HWiNFO64_Plugin
 
         private void button1_Click(object sender, EventArgs e)
         {
-            listView1.Items.Clear();
-            Microsoft.Win32.RegistryKey registryPath = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\HWiNFO64\VSB");
-            if (registryPath != null)
-            {
-                for (int i = 0; i < HWiNFO64Plugin.sensors; i++)
-                {
-                    var item = new ListViewItem
-                    {
-                        Text = i.ToString()
-                    };
-                    item.SubItems.Add(registryPath.GetValue("Sensor" + i).ToString());
-                    item.SubItems.Add(registryPath.GetValue("Label" + i).ToString());
-                    item.SubItems.Add(registryPath.GetValue("Value" + i).ToString());
-                    item.SubItems.Add(registryPath.GetValue("ValueRaw" + i).ToString());
+            PopulateSensorList();
+        }
 
-                    item.Font = new Font(item.Font, FontStyle.Regular);
-                    listView1.Items.Add(item);
+        private void PopulateSensorList()
+        {
+            listView1.BeginUpdate();
+            try
+            {
+                listView1.Items.Clear();
+                Microsoft.Win32.RegistryKey registryPath = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\HWiNFO64\VSB");
+                if (registryPath != null)
+                {
+                    for (int i = 0; i < HWiNFO64Plugin.sensors; i++)
+                    {
+                        var item = new ListViewItem { Text = i.ToString() };
+                        item.SubItems.Add(registryPath.GetValue("Sensor" + i)?.ToString() ?? string.Empty);
+                        item.SubItems.Add(registryPath.GetValue("Label" + i)?.ToString() ?? string.Empty);
+                        item.SubItems.Add(registryPath.GetValue("Value" + i)?.ToString() ?? string.Empty);
+                        item.SubItems.Add(registryPath.GetValue("ValueRaw" + i)?.ToString() ?? string.Empty);
+                        item.Font = new Font(item.Font, FontStyle.Regular);
+                        listView1.Items.Add(item);
+                    }
                 }
             }
-
-            listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-            listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-
-            this.Width = 1091;
+            finally
+            {
+                listView1.EndUpdate();
+            }
         }
     }
 
