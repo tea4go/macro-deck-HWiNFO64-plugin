@@ -70,7 +70,7 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="_GitHashRaw" />
     </Exec>
     <PropertyGroup>
-      <_BuildTimestamp>$([System.DateTime]::Now.ToString("yyMMdd-HHmm"))</_BuildTimestamp>
+      <_BuildTimestamp>$([System.DateTime]::Now.ToString("yyMMdd-HHmmss"))</_BuildTimestamp>
       <_GitHash>$(_GitHashRaw.Trim())</_GitHash>
       <Version>$(VersionBase)-b$(_BuildTimestamp)+$(_GitHash)</Version>
       <InformationalVersion>$(Version)</InformationalVersion>
