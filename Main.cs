@@ -177,18 +177,16 @@ namespace sugoides.HWiNFO64_Plugin
 
         /// <summary>
         /// 首次为某个变量设置描述后记入 _descriptionsApplied，避免每个 tick 重复写。
+        /// 通过 VariableManager.SetDescription 走 SQLite 持久化路径，
+        /// 直接对 GetVariable 返回对象赋值不会被 Macro Deck 保存下来。
         /// </summary>
         private void ApplyDescriptionOnce(string variableName, string description)
         {
             if (_descriptionsApplied.Contains(variableName)) return;
             try
             {
-                var v = VariableManager.GetVariable(this, variableName);
-                if (v != null)
-                {
-                    v.Description = description;
-                    _descriptionsApplied.Add(variableName);
-                }
+                VariableManager.SetDescription(this, variableName, description ?? string.Empty);
+                _descriptionsApplied.Add(variableName);
             }
             catch { /* 描述写失败不影响主流程 */ }
         }
