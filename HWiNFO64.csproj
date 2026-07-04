@@ -7,7 +7,7 @@
     <RootNamespace>HWiNFO64_Plugin</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!--
-      版本号格式：1.0.2-byyyyMMdd-HHmmss+gitXXXXXXX（SemVer 2.0）。
+      版本号格式：1.0.2-byyyyMMdd-HHmmss+XXXXXXX（SemVer 2.0，+ 后为 git 短哈希）。
       动态部分由 SetBuildVersion Target 在每次构建时生成；
       AssemblyVersion / FileVersion 保持四段纯数字，避免破坏依赖该格式的工具。
     -->
@@ -61,7 +61,7 @@
 
   <!--
     在每次构建前执行 git rev-parse 获取短哈希，拼装完整版本号。
-    格式：1.0.2-byyyyMMdd-HHmmss+gitXXXXXXX
+    格式：1.0.2-byyyyMMdd-HHmmss+XXXXXXX
   -->
   <Target Name="SetBuildVersion" BeforeTargets="GetAssemblyAttributes">
     <Exec Command="git rev-parse --short HEAD"
@@ -72,7 +72,7 @@
     <PropertyGroup>
       <_BuildTimestamp>$([System.DateTime]::Now.ToString("yyyyMMdd-HHmmss"))</_BuildTimestamp>
       <_GitHash>$(_GitHashRaw.Trim())</_GitHash>
-      <Version>$(VersionBase)-b$(_BuildTimestamp)+git$(_GitHash)</Version>
+      <Version>$(VersionBase)-b$(_BuildTimestamp)+$(_GitHash)</Version>
       <InformationalVersion>$(Version)</InformationalVersion>
     </PropertyGroup>
     <Message Text="Build version: $(Version)" Importance="high" />
