@@ -6,7 +6,14 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>HWiNFO64_Plugin</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <Version>1.0.2</Version>
+    <!--
+      版本号格式：1.0.2-byyyyMMdd-HHmmss+gitXXXXXXX（SemVer 2.0）。
+      动态部分由 SetBuildVersion Target 在每次构建时生成；
+      AssemblyVersion / FileVersion 保持四段纯数字，避免破坏依赖该格式的工具。
+    -->
+    <VersionBase>1.0.2</VersionBase>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
     <Authors>sugoides</Authors>
     <AssemblyName>HWiNFO64</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
@@ -51,5 +58,40 @@
     <None Include="F:\Dev Stuff\macro-deck-HWiNFO64-plugin\.editorconfig" />
   </ItemGroup>
 
+
+  <!--
+    在每次构建前执行 git rev-parse 获取短哈希，拼装完整版本号。
+    格式：1.0.2-byyyyMMdd-HHmmss+gitXXXXXXX
+  -->
+  <Target Name="SetBuildVersion" BeforeTargets="GetAssemblyAttributes">
+    <Exec Command="git rev-parse --short HEAD"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitHashRaw" />
+    </Exec>
+    <PropertyGroup>
+      <_BuildTimestamp>$([System.DateTime]::Now.ToString("yyyyMMdd-HHmmss"))</_BuildTimestamp>
+      <_GitHash>$(_GitHashRaw.Trim())</_GitHash>
+      <Version>$(VersionBase)-b$(_BuildTimestamp)+git$(_GitHash)</Version>
+      <InformationalVersion>$(Version)</InformationalVersion>
+    </PropertyGroup>
+    <Message Text="Build version: $(Version)" Importance="high" />
+  </Target>
+
+  <!--
+    发布后把 ExtensionManifest.json 拷贝到 publish/，并将 version 字段替换为带时间戳的 $(Version)。
+    源文件 ExtensionManifest.json 保持纯版本号（1.0.2），避免每次构建污染 git 工作区。
+  -->
+  <Target Name="StampExtensionManifest" AfterTargets="Publish">
+    <PropertyGroup>
+      <_ManifestSource>$(MSBuildProjectDirectory)\ExtensionManifest.json</_ManifestSource>
+      <_ManifestTarget>$(PublishDir)ExtensionManifest.json</_ManifestTarget>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_ManifestSource)" DestinationFiles="$(_ManifestTarget)" />
+    <WriteLinesToFile File="$(_ManifestTarget)"
+                      Lines="$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(_ManifestTarget)')), '&quot;version&quot;\s*:\s*&quot;[^&quot;]*&quot;', '&quot;version&quot;: &quot;$(Version)&quot;'))"
+                      Overwrite="true" />
+    <Message Importance="high" Text="ExtensionManifest.json 已生成 -> $(_ManifestTarget) (version = $(Version))" />
+  </Target>
 
 </Project>
