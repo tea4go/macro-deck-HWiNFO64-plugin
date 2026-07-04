@@ -32,15 +32,18 @@ public static class PluginLanguageManager
     private static string GetXMLLanguageResource(string languageName)
     {
         var assembly = typeof(PluginStrings).Assembly;
-        if (string.IsNullOrEmpty(languageName)
-            || !assembly.GetManifestResourceNames().Any(name => name.EndsWith($"{languageName}.xml")))
+        var allNames = assembly.GetManifestResourceNames();
+
+        // 通过后缀匹配定位资源，避免依赖 RootNamespace 具体值
+        string suffix = $".Resources.Languages.{languageName}.xml";
+        string resourceName = allNames.FirstOrDefault(n => n.EndsWith(suffix));
+        if (resourceName == null)
         {
-            languageName = "English";
+            // 回退到英文（英文资源必须存在，否则视为构建错误）
+            resourceName = allNames.FirstOrDefault(n => n.EndsWith(".Resources.Languages.English.xml"));
         }
 
-        string languageFileName = $"sugoides.HWiNFO64_Plugin.Resources.Languages.{languageName}.xml";
-
-        using var resourceStream = assembly.GetManifestResourceStream(languageFileName);
+        using var resourceStream = assembly.GetManifestResourceStream(resourceName);
         using var streamReader = new StreamReader(resourceStream);
         return streamReader.ReadToEnd();
     }
