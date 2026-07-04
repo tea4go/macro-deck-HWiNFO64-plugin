@@ -22,6 +22,12 @@ namespace sugoides.HWiNFO64_Plugin
         // 供配置界面读取，让用户直接看到实际使用的变量名。
         public static readonly Dictionary<int, string> VariableNames = new();
 
+        // 传感器索引 → 变量描述（Sensor + Label 组合），写入到 Macro Deck Variable.Description
+        public static readonly Dictionary<int, string> VariableDescriptions = new();
+
+        // 记录已设置过描述的变量名，避免每次 tick 重复写 Description
+        private readonly HashSet<string> _descriptionsApplied = new();
+
         int refreshTime = 2000;
 
         readonly Microsoft.Win32.RegistryKey registryPath = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\HWiNFO64\VSB");
@@ -58,6 +64,7 @@ namespace sugoides.HWiNFO64_Plugin
                 }
 
                 BuildVariableNameMap();
+                CleanupOrphanVariables();
             }
 
             var refreshTimeFromRegistry = PluginConfiguration.GetValue(HWiNFO64Plugin.Instance, "refreshTime");
@@ -79,6 +86,8 @@ namespace sugoides.HWiNFO64_Plugin
         private void BuildVariableNameMap()
         {
             VariableNames.Clear();
+            VariableDescriptions.Clear();
+            _descriptionsApplied.Clear();
 
             // 收集所有传感器的原始 Label 与 Sensor
             var entries = new List<(int Index, string Label, string Sensor)>();
@@ -122,7 +131,67 @@ namespace sugoides.HWiNFO64_Plugin
                 }
 
                 VariableNames[index] = uniqueName;
+                // 描述用 "Label — Sensor" 组合，保留原始可读文本，与变量名的清洗结果分离
+                VariableDescriptions[index] = string.IsNullOrEmpty(sensor)
+                    ? label
+                    : $"{label} — {sensor}";
             }
+        }
+
+        /// <summary>
+        /// 清理注册表里已不存在的旧变量（例如变量名规则变更后遗留的 hwi64_____ 之类）。
+        /// 保留当前 VariableNames 映射中的所有变量（及其 _raw 变体）。
+        /// </summary>
+        private void CleanupOrphanVariables()
+        {
+            try
+            {
+                var expected = new HashSet<string>();
+                foreach (var name in VariableNames.Values)
+                {
+                    expected.Add(name);
+                    expected.Add(name + "_raw");
+                }
+
+                var existing = VariableManager.GetVariables(this);
+                if (existing == null) return;
+
+                var toDelete = new List<string>();
+                foreach (var v in existing)
+                {
+                    if (!expected.Contains(v.Name)) toDelete.Add(v.Name);
+                }
+                foreach (var name in toDelete)
+                {
+                    VariableManager.DeleteVariable(name);
+                }
+                if (toDelete.Count > 0)
+                {
+                    MacroDeckLogger.Information(this, "Cleaned up {0} orphan variable(s): {1}", toDelete.Count, string.Join(", ", toDelete));
+                }
+            }
+            catch (Exception ex)
+            {
+                MacroDeckLogger.Warning(this, "Cleanup orphan variables failed: {0}", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 首次为某个变量设置描述后记入 _descriptionsApplied，避免每个 tick 重复写。
+        /// </summary>
+        private void ApplyDescriptionOnce(string variableName, string description)
+        {
+            if (_descriptionsApplied.Contains(variableName)) return;
+            try
+            {
+                var v = VariableManager.GetVariable(this, variableName);
+                if (v != null)
+                {
+                    v.Description = description;
+                    _descriptionsApplied.Add(variableName);
+                }
+            }
+            catch { /* 描述写失败不影响主流程 */ }
         }
 
         /// <summary>
@@ -175,6 +244,7 @@ namespace sugoides.HWiNFO64_Plugin
                     try
                     {
                         if (!VariableNames.TryGetValue(i, out var variableName)) continue;
+                        VariableDescriptions.TryGetValue(i, out var description);
 
                         var value = registryPath.GetValue("Value" + i) as string ?? string.Empty;
                         var valueRawStr = registryPath.GetValue("ValueRaw" + i) as string;
@@ -183,6 +253,7 @@ namespace sugoides.HWiNFO64_Plugin
                         {
                             _lastStringValues[variableName] = value;
                             VariableManager.SetValue(variableName, value, VariableType.String, HWiNFO64Plugin.Instance, (string[])null);
+                            ApplyDescriptionOnce(variableName, description);
                         }
 
                         if (float.TryParse(valueRawStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw))
@@ -192,6 +263,7 @@ namespace sugoides.HWiNFO64_Plugin
                             {
                                 _lastFloatValues[rawKey] = raw;
                                 VariableManager.SetValue(rawKey, raw, VariableType.Float, HWiNFO64Plugin.Instance, (string[])null);
+                                ApplyDescriptionOnce(rawKey, string.IsNullOrEmpty(description) ? "(raw)" : description + " (raw)");
                             }
                         }
                     }
