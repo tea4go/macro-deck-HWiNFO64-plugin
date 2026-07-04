@@ -1,6 +1,7 @@
 ﻿using HWiNFO64_Plugin;
 using SuchByte.MacroDeck.Plugins;
 using SuchByte.MacroDeck.Variables;
+using sugoides.HWiNFO64_Plugin.Language;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Timers;
@@ -26,6 +27,8 @@ namespace sugoides.HWiNFO64_Plugin
 
         public override void Enable()
         {
+            PluginLanguageManager.Initialize();
+
             if (registryPath != null)
             {
                 sensors = 0;

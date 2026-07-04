@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<PluginStrings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<__Language__>English</__Language__>
+	<__LanguageCode__>en</__LanguageCode__>
+	<__Author__>sugoides</__Author__>
+
+	<FormTitle>HWiNFO64 Plugin Config</FormTitle>
+	<FoundSensors>Found Sensors:</FoundSensors>
+	<RefreshInterval>Refresh interval:</RefreshInterval>
+	<SaveSettings>Save Settings</SaveSettings>
+	<ShowSensors>Show sensors</ShowSensors>
+	<ClickHereForSetupInfo>Click here for setup info</ClickHereForSetupInfo>
+	<SettingsSaved>Settings Saved.</SettingsSaved>
+	<Info>Info</Info>
+	<IconByLiuQQ>Icon by LiuQQ</IconByLiuQQ>
+	<PoweredByHWiNFO64>Powered by HWiNFO64</PoweredByHWiNFO64>
+	<ImportantNotice>Important: Make sure you have HWiNFO64 installed and please restart Macro-Deck if you change any settings or add new sensors in HWiNFO64</ImportantNotice>
+
+	<ColumnID>ID</ColumnID>
+	<ColumnSensor>Sensor</ColumnSensor>
+	<ColumnLabel>Label</ColumnLabel>
+	<ColumnValue>Value</ColumnValue>
+	<ColumnRawValue>Raw Value</ColumnRawValue>
+</PluginStrings>

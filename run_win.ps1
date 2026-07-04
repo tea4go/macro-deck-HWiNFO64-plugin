@@ -1,0 +1,101 @@
+param(
+    [switch]$Build,
+    [switch]$Run,
+    [switch]$Clean,
+    [string]$Configuration = "Release",
+    [string]$PluginDir = (Join-Path $env:APPDATA "Macro Deck\plugins\sugoides.HWiNFO64"),
+    [string]$MacroDeckExe = "C:\Program Files\Macro Deck\Macro Deck 2.exe"
+)
+
+# 切换到脚本所在目录，确保相对路径正确
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Push-Location $ScriptDir
+
+if (-not $Build -and -not $Run) {
+    Write-Host "用法: .\run_win.ps1 [-Build] [-Run] [-Clean] [-Configuration <Release|Debug>] [-PluginDir <目录>] [-MacroDeckExe <路径>]"
+    Write-Host ""
+    Write-Host "  -Build           编译并发布插件到 publish/"
+    Write-Host "  -Run             停止 Macro Deck，替换安装插件，并重新启动"
+    Write-Host "  -Clean           构建前清理 bin/、obj/、publish/ 目录（推荐版本号变更后使用）"
+    Write-Host "  -Configuration   构建配置（默认: Release）"
+    Write-Host "  -PluginDir       插件安装目录（默认: %APPDATA%\Macro Deck\plugins\sugoides.HWiNFO64）"
+    Write-Host "                   从源码运行 Macro Deck 时，指向其 publish\Data\plugins\sugoides.HWiNFO64"
+    Write-Host "  -MacroDeckExe    Macro Deck 可执行文件路径（默认: C:\Program Files\Macro Deck\Macro Deck 2.exe）"
+    Pop-Location
+    exit 0
+}
+
+$MacroDeckProcessName = "Macro Deck 2"
+$Output = "publish"
+
+if ($Build) {
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+        Write-Error "未找到 .NET SDK，请安装：https://dotnet.microsoft.com/download/dotnet/10.0"
+        Pop-Location
+        exit 1
+    }
+
+    # 构建前先退出正在运行的 Macro Deck，避免 DLL 被锁
+    Get-Process -Name $MacroDeckProcessName -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Seconds 1
+
+    # 清理旧的编译缓存和输出，避免增量编译导致 DLL 版本号未更新
+    if ($Clean) {
+        Write-Host "正在清理旧的编译缓存..."
+        if (Test-Path "bin") { Remove-Item -Recurse -Force "bin" }
+        if (Test-Path "obj") { Remove-Item -Recurse -Force "obj" }
+        if (Test-Path $Output) { Remove-Item -Recurse -Force $Output }
+        Write-Host "编译缓存已清理"
+    }
+
+    Write-Host "正在还原依赖..."
+    dotnet restore "HWiNFO64.sln"
+    if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
+
+    Write-Host "正在发布 ($Configuration)..."
+    dotnet publish "HWiNFO64.csproj" -c $Configuration --no-restore -o $Output -p:CI=true
+    if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
+
+    Write-Host "完成 -> $Output"
+}
+
+if ($Run) {
+    if (-not (Test-Path $Output)) {
+        Write-Error "输出目录不存在：$Output，请先执行 -Build"
+        Pop-Location
+        exit 1
+    }
+
+    if (-not (Test-Path $PluginDir)) {
+        Write-Host "插件目录不存在，正在创建：$PluginDir"
+        New-Item -ItemType Directory -Path $PluginDir -Force | Out-Null
+    }
+
+    # 停止 Macro Deck
+    $running = Get-Process -Name $MacroDeckProcessName -ErrorAction SilentlyContinue
+    if ($running) {
+        Write-Host "正在退出 Macro Deck..."
+        $running | Stop-Process -Force
+        Start-Sleep -Seconds 2
+    }
+
+    # 复制发布输出到插件目录
+    Write-Host "正在复制插件文件到：$PluginDir"
+    $absOutput = (Resolve-Path $Output).Path
+    Copy-Item -Path (Join-Path $absOutput "*") -Destination $PluginDir -Recurse -Force
+    if (-not (Test-Path (Join-Path $PluginDir "ExtensionManifest.json"))) {
+        Copy-Item -Path "ExtensionManifest.json" -Destination $PluginDir -Force
+    }
+    Copy-Item -Path "ExtensionIcon.png" -Destination $PluginDir -Force
+
+    # 启动 Macro Deck
+    Write-Host "正在启动 Macro Deck..."
+    if (Test-Path $MacroDeckExe) {
+        Start-Process -FilePath $MacroDeckExe
+    } else {
+        Write-Warning "未找到 Macro Deck 可执行文件：$MacroDeckExe"
+    }
+}
+
+# 恢复原始工作目录
+Pop-Location

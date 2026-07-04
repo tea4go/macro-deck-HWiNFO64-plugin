@@ -1,4 +1,6 @@
-﻿using sugoides.HWiNFO64_Plugin;
+using sugoides.HWiNFO64_Plugin;
+using sugoides.HWiNFO64_Plugin.Language;
+using sugoides.HWiNFO64_Plugin.Utils;
 using SuchByte.MacroDeck.Plugins;
 using System;
 using System.Diagnostics;
@@ -12,12 +14,33 @@ namespace HWiNFO64_Plugin
     {
         float angle = 0;
         float rotSpeed = 5;
-        Point origin = new Point(51, 237);  // your origin
-        int distance = 50;                  // your distance
+        Point origin = new Point(51, 237);
+        int distance = 50;
 
         public PluginConfigurationView()
         {
             InitializeComponent();
+            this.ApplyMacroDeckFont();
+            ApplyStrings();
+        }
+
+        private void ApplyStrings()
+        {
+            var s = PluginLanguageManager.PluginStrings;
+            this.Text = s.FormTitle;
+            label1.Text = s.FoundSensors;
+            label2.Text = s.RefreshInterval;
+            SaveSettingsButton.Text = s.SaveSettings;
+            button1.Text = s.ShowSensors;
+            linkLabel2.Text = s.ClickHereForSetupInfo;
+            label3.Text = s.IconByLiuQQ;
+            linkLabel1.Text = s.PoweredByHWiNFO64;
+            textBox1.Text = s.ImportantNotice;
+            columnHeader1.Text = s.ColumnID;
+            columnHeader2.Text = s.ColumnSensor;
+            columnHeader3.Text = s.ColumnLabel;
+            columnHeader4.Text = s.ColumnValue;
+            columnHeader5.Text = s.ColumnRawValue;
         }
 
         private void PluginConfigurationView_Shown(object sender, EventArgs e)
@@ -26,7 +49,7 @@ namespace HWiNFO64_Plugin
 
             var refreshTimeFromRegistry = PluginConfiguration.GetValue(HWiNFO64Plugin.Instance, "refreshTime");
             if (int.TryParse(refreshTimeFromRegistry, out var refreshTime) == false)
-                refreshTime = 2000; //default
+                refreshTime = 2000;
 
             refreshTimeInput.Value = refreshTime;
         }
@@ -39,7 +62,8 @@ namespace HWiNFO64_Plugin
         private void SaveSettingsButton_Click(object sender, EventArgs e)
         {
             PluginConfiguration.SetValue(HWiNFO64Plugin.Instance, "refreshTime", refreshTimeInput.Value.ToString());
-            MessageBox.Show("Settings Saved.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            var s = PluginLanguageManager.PluginStrings;
+            MessageBox.Show(s.SettingsSaved, s.Info, MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
 
@@ -79,7 +103,6 @@ namespace HWiNFO64_Plugin
             }
 
             listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-
             listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
 
             this.Width = 1091;
