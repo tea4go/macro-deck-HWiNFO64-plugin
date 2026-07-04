@@ -224,31 +224,30 @@ namespace sugoides.HWiNFO64_Plugin
         }
 
         /// <summary>
-        /// 把原始文本转换为合法的变量名段：中文字符转拼音（无声调，下划线分隔），
-        /// 保留 ASCII 字母/数字/下划线，其他 Unicode 字母也保留（如日文、韩文回退到 \p{L}），
-        /// 所有非法字符替换为下划线，最后折叠连续下划线并去掉首尾下划线。
+        /// 把原始文本转换为合法的变量名段：中文字符转为拼音首字母（无声调，小写），
+        /// 相邻中文字符的首字母直接拼接不加下划线；ASCII 字母/数字/下划线原样保留；
+        /// 其他字符替换为下划线，最后折叠连续下划线并去掉首尾下划线。
         ///
         /// 示例：
-        ///   "物理内存使用率"  → "wu_li_nei_cun_shi_yong_lu"
-        ///   "CPU 总使用率"    → "CPU_zong_shi_yong_lu"
+        ///   "物理内存使用率"  → "wlncsyl"
+        ///   "CPU 总使用率"    → "CPU_zsyl"
+        ///   "当前下载速度"    → "dqxzsd"
         ///   "Current DL rate" → "Current_DL_rate"
         /// </summary>
         private static string Sanitize(string raw)
         {
             if (string.IsNullOrEmpty(raw)) return string.Empty;
 
-            var sb = new StringBuilder(raw.Length * 3);
+            var sb = new StringBuilder(raw.Length);
             foreach (var ch in raw)
             {
                 if (IsCjk(ch))
                 {
-                    // 单字符转拼音；NPinyin 会返回不带声调的拼音，如 '物' → "wu"
                     var py = Pinyin.GetPinyin(ch);
                     if (!string.IsNullOrEmpty(py) && py != ch.ToString())
                     {
-                        AppendUnderscoreIfNeeded(sb);
-                        sb.Append(py.ToLowerInvariant());
-                        sb.Append('_');
+                        // 仅取拼音首字母，多个中文字符直接拼接（如 "物理" → "wl"）
+                        sb.Append(char.ToLowerInvariant(py[0]));
                     }
                     else
                     {
